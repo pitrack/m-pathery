@@ -1,0 +1,7 @@
+#include "tile.h"
+
+Tile::Tile(TileType t) : t(t) {}
+
+TileType Tile::getTileType(){
+  return t;
+}

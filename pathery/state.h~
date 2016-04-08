@@ -1,0 +1,6 @@
+#pragma once
+
+struct State{
+  int x;
+  int y;
+};

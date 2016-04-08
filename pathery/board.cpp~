@@ -1,0 +1,37 @@
+#include "board.h"
+#include "tile.h"
+
+#include <iostream>
+
+using namespace Tile;
+
+Board::Board(int width, int height) : width(width), height(height) {
+  Tile** grid = new Tile*[width];
+  for (int w = 0; w < width; w++) {
+    grid[w] = new Tile[height];
+    for (int h = 0; h < height; h++) {
+      grid[w][h] = Tile(TileType::Uninit);
+    }
+  }
+}
+
+int Board::getHeight(){ return height; }
+int Board::getWidth(){ return width; }
+
+
+Tile Board::getTileAt(int x, int y){
+  return grid[x][y];
+}
+
+void Board::putTileAt(int x, int y, TileType t){
+  grid[x][y].changeTileType(t);
+}
+
+void Board::print(){
+  for(int i = 0; i < height; i++){
+    for (int j = 0; j < width; j++){
+      std::cout << (int)grid[i][j] << " ";
+    }
+    std::cout << std::endl;
+  }
+}
