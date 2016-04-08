@@ -1,2 +1,0 @@
-pathery-test: main.cpp board.cpp tile.cpp
-	g++ -o pathery-test main.cpp board.cpp tile.cpp
