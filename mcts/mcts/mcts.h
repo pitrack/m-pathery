@@ -55,7 +55,7 @@ struct ComputeOptions
 	bool verbose;
 
 	ComputeOptions() :
-		number_of_threads(1),
+		number_of_threads(4),
 		max_iterations(10000),
 		max_time(-1.0), // default is no time limit.
 		verbose(false)
@@ -79,6 +79,7 @@ typename State::Move compute_move(const State root_state,
 #include <iomanip>
 #include <iostream>
 #include <map>
+#include <mutex>
 #include <memory>
 #include <random>
 #include <set>
@@ -90,6 +91,8 @@ typename State::Move compute_move(const State root_state,
 #ifdef USE_OPENMP
 #include <omp.h>
 #endif
+
+#define TREE false
 
 namespace MCTS
 {
@@ -146,6 +149,7 @@ public:
 	//std::atomic<int> visits;
 	double wins;
 	int visits;
+	std::mutex m;
 
 	std::vector<Move> moves;
 	std::vector<Node*> children;
@@ -326,17 +330,32 @@ std::unique_ptr<Node<State>>  compute_tree(const State root_state,
 
 		// Select a path through the tree to a leaf node.
 		while (!node->has_untried_moves() && node->has_children()) {
-			node = node->select_child_UCT();
-			state.do_move(node->move);
-		}
-
+		     if (TREE) {
+  //std::cerr << "Waiting for lock" << endl;
+                         node->m.lock(); 
+			 //			 std::cerr << "Waiting for lock" << endl;
+                     }
+                     auto new_node = node->select_child_UCT();
+		     if (TREE) {
+                         new_node->m.lock(); 
+			 node->m.unlock(); 
+                     }
+		     node = new_node;
+		     state.do_move(node->move);
+                }
+		
 		// If we are not already at the final state, expand the
 		// tree with a new node and move there.
 		if (node->has_untried_moves()) {
-			auto move = node->get_untried_move(&random_engine);
-			state.do_move(move);
-			node = node->add_child(move, state);
-		}
+                    auto move = node->get_untried_move(&random_engine);
+                    state.do_move(move);
+		    auto new_node = node->add_child(move, state);
+		    if (TREE) {
+                        node->m.unlock();
+                    }
+		    node = new_node;
+                }
+		
 
 		// We now play randomly until the game ends.
 		while (state.has_moves()) {
@@ -345,11 +364,24 @@ std::unique_ptr<Node<State>>  compute_tree(const State root_state,
 
 		// We have now reached a final state. Backpropagate the result
 		// up the tree to the root node.
+		if (TREE) {
+                    node->m.lock(); 
+                }
 		while (node != nullptr) {
 			node->update(state.get_result(node->player_to_move));
+			if (node->parent == nullptr) {
+                            if (TREE) {
+                                node->m.unlock();
+			    }
+			    break;
+                        }
+                        if (TREE) {
+                            node->parent->m.lock(); 
+			    node->m.unlock();
+                        }
 			node = node->parent;
 		}
-
+		
 		#ifdef USE_OPENMP
 		if (options.verbose || options.max_time >= 0) {
 			double time = ::omp_get_wtime();
