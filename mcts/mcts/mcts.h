@@ -1,9 +1,13 @@
 #ifndef MCTS_HEADER_PETTER
 #define MCTS_HEADER_PETTER
+#define TREE true
+#define ROOTS 4
+#define PTRS 4
+
 //
 // Petter Strandmark 2013
 // petter.strandmark@gmail.com
-//
+// Modified by Patrick Xia
 // Monte Carlo Tree Search for finite games.
 //
 // Originally based on Python code at
@@ -49,13 +53,15 @@ namespace MCTS
 {
 struct ComputeOptions
 {
-	int number_of_threads;
+	int number_of_roots;
+        int number_of_pointers;
 	int max_iterations;
 	double max_time;
 	bool verbose;
 
 	ComputeOptions() :
-		number_of_threads(4),
+		number_of_roots(ROOTS),
+                number_of_pointers(PTRS),
 		max_iterations(10000),
 		max_time(-1.0), // default is no time limit.
 		verbose(false)
@@ -92,7 +98,6 @@ typename State::Move compute_move(const State root_state,
 #include <omp.h>
 #endif
 
-#define TREE false
 
 namespace MCTS
 {
@@ -150,6 +155,7 @@ public:
 	double wins;
 	int visits;
 	std::mutex m;
+	std::mutex back;
 
 	std::vector<Move> moves;
 	std::vector<Node*> children;
@@ -301,25 +307,15 @@ std::string Node<State>::indent_string(int indent) const
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 
-
 template<typename State>
-std::unique_ptr<Node<State>>  compute_tree(const State root_state,
-                                           const ComputeOptions options,
-                                           std::mt19937_64::result_type initial_seed)
+void compute_pointer(const shared_ptr<Node<State>> root,
+                     const State root_state,
+		     const ComputeOptions options,
+		     std::mt19937_64::result_type initial_seed)
 {
-	std::mt19937_64 random_engine(initial_seed);
+	std::mt19937_64 random_engine(initial_seed); 
 
-	attest(options.max_iterations >= 0 || options.max_time >= 0);
-	if (options.max_time >= 0) {
-		#ifndef USE_OPENMP
-		throw std::runtime_error("ComputeOptions::max_time requires OpenMP.");
-		#endif
-	}
-	// Will support more players later.
-	attest(root_state.player_to_move == 1 || root_state.player_to_move == 2);
-	auto root = std::unique_ptr<Node<State>>(new Node<State>(root_state));
-
-	#ifdef USE_OPENMP
+       #ifdef USE_OPENMP
 	double start_time = ::omp_get_wtime();
 	double print_time = start_time;
 	#endif
@@ -329,12 +325,15 @@ std::unique_ptr<Node<State>>  compute_tree(const State root_state,
 		State state = root_state;
 
 		// Select a path through the tree to a leaf node.
+		if (TREE) {
+  /* if ( iter >= 22257) */
+  /* 		  std::cerr << "W1 iter" << iter << "\n" << root->tree_to_string(5, 2) << endl;  */
+                  node->m.lock(); 
+  /* if ( iter >= 22257) */
+  /* 		  std::cerr << "A1" << endl; */
+                }
+
 		while (!node->has_untried_moves() && node->has_children()) {
-		     if (TREE) {
-  //std::cerr << "Waiting for lock" << endl;
-                         node->m.lock(); 
-			 //			 std::cerr << "Waiting for lock" << endl;
-                     }
                      auto new_node = node->select_child_UCT();
 		     if (TREE) {
                          new_node->m.lock(); 
@@ -343,41 +342,48 @@ std::unique_ptr<Node<State>>  compute_tree(const State root_state,
 		     node = new_node;
 		     state.do_move(node->move);
                 }
-		
+
+		auto old_node = node;		
+
+		/* std::cerr << "Found node" << endl; */
 		// If we are not already at the final state, expand the
 		// tree with a new node and move there.
 		if (node->has_untried_moves()) {
                     auto move = node->get_untried_move(&random_engine);
                     state.do_move(move);
-		    auto new_node = node->add_child(move, state);
-		    if (TREE) {
-                        node->m.unlock();
-                    }
-		    node = new_node;
+		    node = node->add_child(move, state);
                 }
-		
+
+		if (TREE) {
+                    old_node->m.unlock();
+                }
 
 		// We now play randomly until the game ends.
 		while (state.has_moves()) {
 			state.do_random_move(&random_engine);
 		}
-
+		//std::cerr << iter << endl; 
 		// We have now reached a final state. Backpropagate the result
 		// up the tree to the root node.
 		if (TREE) {
-                    node->m.lock(); 
+                    /* std::cerr << "W2 iter" << iter << endl; //" thread " <<   */
+		    //std::this_thread::get_id() << endl; 
+		    node->back.lock(); 
+		    /* std::cerr << "A2" << endl; */
                 }
 		while (node != nullptr) {
 			node->update(state.get_result(node->player_to_move));
 			if (node->parent == nullptr) {
                             if (TREE) {
-                                node->m.unlock();
+                                node->back.unlock();
 			    }
 			    break;
                         }
                         if (TREE) {
-                            node->parent->m.lock(); 
-			    node->m.unlock();
+                            /* std::cerr << "W2p" << node->to_string() <<endl; */
+                            node->parent->back.lock(); 
+                            /* std::cerr << "U2p" << node->to_string() <<endl; */
+			    node->back.unlock();
                         }
 			node = node->parent;
 		}
@@ -395,6 +401,41 @@ std::unique_ptr<Node<State>>  compute_tree(const State root_state,
 			}
 		}
 		#endif
+	}
+
+}
+
+template<typename State>
+std::shared_ptr<Node<State>>  compute_tree(const State root_state,
+                                           const ComputeOptions options,
+                                           std::mt19937_64::result_type initial_seed)
+{
+	attest(options.max_iterations >= 0 || options.max_time >= 0);
+	if (options.max_time >= 0) {
+		#ifndef USE_OPENMP
+		throw std::runtime_error("ComputeOptions::max_time requires OpenMP.");
+		#endif
+	}
+	// Will support more players later.
+	attest(root_state.player_to_move == 1 || root_state.player_to_move == 2);
+	auto root = std::shared_ptr<Node<State>>(new Node<State>(root_state));
+	vector<future<void>> root_futures;	
+
+	State state = root_state;
+
+	ComputeOptions job_options = options;
+	job_options.verbose = false;
+
+	for (int t = 0; t < options.number_of_pointers; ++t) {
+                auto func = [t, &root, &state, &job_options] () -> void
+		{
+                        return compute_pointer(root, state, job_options, 2342123 * t + 15251); 
+			//seed is arbitrary
+		};
+		root_futures.push_back(std::async(std::launch::async, func));
+	}
+	for (int t=  0; t < options.number_of_pointers; ++t) {
+	  root_futures[t].get();
 	}
 
 	return root;
@@ -420,11 +461,11 @@ typename State::Move compute_move(const State root_state,
 	#endif
 
 	// Start all jobs to compute trees.
-	vector<future<unique_ptr<Node<State>>>> root_futures;
+	vector<future<shared_ptr<Node<State>>>> root_futures;
 	ComputeOptions job_options = options;
 	job_options.verbose = false;
-	for (int t = 0; t < options.number_of_threads; ++t) {
-		auto func = [t, &root_state, &job_options] () -> std::unique_ptr<Node<State>>
+	for (int t = 0; t < options.number_of_roots; ++t) {
+		auto func = [t, &root_state, &job_options] () -> std::shared_ptr<Node<State>>
 		{
 			return compute_tree(root_state, job_options, 1012411 * t + 12515);
 		};
@@ -433,8 +474,8 @@ typename State::Move compute_move(const State root_state,
 	}
 
 	// Collect the results.
-	vector<unique_ptr<Node<State>>> roots;
-	for (int t = 0; t < options.number_of_threads; ++t) {
+	vector<shared_ptr<Node<State>>> roots;
+	for (int t = 0; t < options.number_of_roots; ++t) {
 		roots.push_back(std::move(root_futures[t].get()));
 	}
 
@@ -442,7 +483,7 @@ typename State::Move compute_move(const State root_state,
 	map<typename State::Move, int> visits;
 	map<typename State::Move, double> wins;
 	long long games_played = 0;
-	for (int t = 0; t < options.number_of_threads; ++t) {
+	for (int t = 0; t < options.number_of_roots; ++t) {
 		auto root = roots[t].get();
 		games_played += root->visits;
 		for (auto child = root->children.cbegin(); child != root->children.cend(); ++child) {
@@ -487,7 +528,7 @@ typename State::Move compute_move(const State root_state,
 		double time = ::omp_get_wtime();
 		std::cerr << games_played << " games played in " << double(time - start_time) << " s. " 
 		          << "(" << double(games_played) / (time - start_time) << " / second, "
-		          << options.number_of_threads << " parallel jobs)." << endl;
+		          << options.number_of_roots << " parallel roots," << options.number_of_pointers                          << " pointers per root)." << endl;
 	}
 	#endif
 
