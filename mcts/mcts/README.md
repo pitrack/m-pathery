@@ -1,3 +1,5 @@
+This is the README for the mcts project implemented here:
+
 [![Build Status](https://travis-ci.org/PetterS/monte-carlo-tree-search.png)](https://travis-ci.org/PetterS/monte-carlo-tree-search)
 
 This library is still very experimental. 
