@@ -1,8 +1,8 @@
 #ifndef MCTS_HEADER_PETTER
 #define MCTS_HEADER_PETTER
 #define TREE true
-#define ROOTS 4
-#define PTRS 4
+#define ROOTS 1
+#define PTRS 1
 
 //
 // Petter Strandmark 2013
@@ -144,7 +144,7 @@ public:
 	void update(double result);
 
 	std::string to_string() const;
-	std::string tree_to_string(int max_depth = 1000000, int indent = 0) const;
+	std::string tree_to_string(int max_depth = 100, int indent = 0) const;
 
 	const Move move;
 	Node* const parent;
@@ -274,7 +274,7 @@ std::string Node<State>::to_string() const
 	std::stringstream sout;
 	sout << "["
 	     << "P" << 3 - player_to_move << " "
-	     << "M:" << move << " "
+	     << "M:" << "(" << move.first << "," << move.second << ")" << " "
 	     << "W/V: " << wins << "/" << visits << " "
 	     << "U: " << moves.size() << "]\n";
 	return sout.str();
@@ -322,15 +322,11 @@ template<typename State>
 
 	for (int iter = 1; iter <= options.max_iterations || options.max_iterations < 0; ++iter) {
 		auto node = root.get();
-		State state = root_state;
+		State state = root_state.copy();
 
 		// Select a path through the tree to a leaf node.
 		if (TREE) {
-  /* if ( iter >= 22257) */
-  /* 		  std::cerr << "W1 iter" << iter << "\n" << root->tree_to_string(5, 2) << endl;  */
                   node->m.lock(); 
-  /* if ( iter >= 22257) */
-  /* 		  std::cerr << "A1" << endl; */
                 }
 
 		while (!node->has_untried_moves() && node->has_children()) {
@@ -345,7 +341,6 @@ template<typename State>
 
 		auto old_node = node;		
 
-		/* std::cerr << "Found node" << endl; */
 		// If we are not already at the final state, expand the
 		// tree with a new node and move there.
 		if (node->has_untried_moves()) {
@@ -353,23 +348,21 @@ template<typename State>
                     state.do_move(move);
 		    node = node->add_child(move, state);
                 }
-
 		if (TREE) {
                     old_node->m.unlock();
                 }
-
+		
 		// We now play randomly until the game ends.
 		while (state.has_moves()) {
-			state.do_random_move(&random_engine);
+                     state.do_random_move(&random_engine);
 		}
+
+
 		//std::cerr << iter << endl; 
 		// We have now reached a final state. Backpropagate the result
 		// up the tree to the root node.
 		if (TREE) {
-                    /* std::cerr << "W2 iter" << iter << endl; //" thread " <<   */
-		    //std::this_thread::get_id() << endl; 
 		    node->back.lock(); 
-		    /* std::cerr << "A2" << endl; */
                 }
 		while (node != nullptr) {
 			node->update(state.get_result(node->player_to_move));
@@ -387,6 +380,8 @@ template<typename State>
                         }
 			node = node->parent;
 		}
+
+		//		std::cerr << node->tree_to_string() << endl;
 		
 		#ifdef USE_OPENMP
 		if (options.verbose || options.max_time >= 0) {
@@ -416,12 +411,12 @@ std::shared_ptr<Node<State>>  compute_tree(const State root_state,
 		throw std::runtime_error("ComputeOptions::max_time requires OpenMP.");
 		#endif
 	}
-	// Will support more players later.
+
 	attest(root_state.player_to_move == 1 || root_state.player_to_move == 2);
 	auto root = std::shared_ptr<Node<State>>(new Node<State>(root_state));
 	vector<std::future<void>> root_futures;	
 
-	State state = root_state;
+	State state = root_state.copy();
 
 	ComputeOptions job_options = options;
 	job_options.verbose = false;
@@ -467,7 +462,7 @@ typename State::Move compute_move(const State root_state,
 	for (int t = 0; t < options.number_of_roots; ++t) {
 		auto func = [t, &root_state, &job_options] () -> std::shared_ptr<Node<State>>
 		{
-			return compute_tree(root_state, job_options, 1012411 * t + 12515);
+                     return compute_tree(root_state.copy(), job_options, 1012411 * t + 12515);
 		};
 
 		root_futures.push_back(std::async(std::launch::async, func));
@@ -508,7 +503,7 @@ typename State::Move compute_move(const State root_state,
 		}
 
 		if (options.verbose) {
-			cerr << "Move: " << itr.first
+			cerr << "Move: " << "(" << itr.first.first << "," << itr.first.second << ")"
 			     << " (" << setw(2) << right << int(100.0 * v / double(games_played) + 0.5) << "% visits)"
 			     << " (" << setw(2) << right << int(100.0 * w / v + 0.5)    << "% wins)" << endl;
 		}
@@ -518,7 +513,7 @@ typename State::Move compute_move(const State root_state,
 		auto best_wins = wins[best_move];
 		auto best_visits = visits[best_move];
 		cerr << "----" << endl;
-		cerr << "Best: " << best_move
+		cerr << "Best: " << " (" << best_move.first << "," << best_move.second << ") "
 		     << " (" << 100.0 * best_visits / double(games_played) << "% visits)"
 		     << " (" << 100.0 * best_wins / best_visits << "% wins)" << endl;
 	}
