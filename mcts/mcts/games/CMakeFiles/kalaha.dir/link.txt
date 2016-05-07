@@ -1,1 +1,0 @@
-/usr/bin/c++    --std=c++11 -fopenmp -Wall -Wextra -Wno-sign-compare -Wno-unused-parameter -fpic -O3 -DNDEBUG    CMakeFiles/kalaha.dir/kalaha.cpp.o  -o ../bin/kalaha -rdynamic 

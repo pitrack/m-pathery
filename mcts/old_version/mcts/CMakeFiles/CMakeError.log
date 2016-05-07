@@ -1,0 +1,116 @@
+Compiling the C compiler identification source file "CMakeCCompilerId.c" failed.
+Compiler: /bin/cc 
+Build flags: 
+Id flags: 
+
+The output was:
+No such file or directory
+
+
+Compiling the C compiler identification source file "CMakeCCompilerId.c" failed.
+Compiler: /bin/cc 
+Build flags: 
+Id flags: -c
+
+The output was:
+No such file or directory
+
+
+Compiling the C compiler identification source file "CMakeCCompilerId.c" failed.
+Compiler: /bin/cc 
+Build flags: 
+Id flags: -Aa
+
+The output was:
+No such file or directory
+
+
+Checking whether the C compiler is IAR using "" did not match "IAR .+ Compiler":
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" failed.
+Compiler: /bin/c++ 
+Build flags: 
+Id flags: 
+
+The output was:
+No such file or directory
+
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" failed.
+Compiler: /bin/c++ 
+Build flags: 
+Id flags: -c
+
+The output was:
+No such file or directory
+
+
+Checking whether the CXX compiler is IAR using "" did not match "IAR .+ Compiler":
+Determining if the C compiler works failed with the following output:
+
+
+Compiling the C compiler identification source file "CMakeCCompilerId.c" failed.
+Compiler: /bin/cc 
+Build flags: 
+Id flags: 
+
+The output was:
+No such file or directory
+
+
+Compiling the C compiler identification source file "CMakeCCompilerId.c" failed.
+Compiler: /bin/cc 
+Build flags: 
+Id flags: -c
+
+The output was:
+No such file or directory
+
+
+Compiling the C compiler identification source file "CMakeCCompilerId.c" failed.
+Compiler: /bin/cc 
+Build flags: 
+Id flags: -Aa
+
+The output was:
+No such file or directory
+
+
+Checking whether the C compiler is IAR using "" did not match "IAR .+ Compiler":
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" failed.
+Compiler: /bin/c++ 
+Build flags: 
+Id flags: 
+
+The output was:
+No such file or directory
+
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" failed.
+Compiler: /bin/c++ 
+Build flags: 
+Id flags: -c
+
+The output was:
+No such file or directory
+
+
+Checking whether the CXX compiler is IAR using "" did not match "IAR .+ Compiler":
+Determining if the C compiler works failed with the following output:
+
+
+Performing C++ SOURCE FILE Test SUPPORTS_STD_CXX11 failed with the following output:
+Change Dir: /home/paxia/AFS/private/418/m-pathery/mcts/mcts/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/gmake "cmTryCompileExec3543783401/fast"
+/usr/bin/gmake -f CMakeFiles/cmTryCompileExec3543783401.dir/build.make CMakeFiles/cmTryCompileExec3543783401.dir/build
+gmake[1]: Entering directory `/afs/andrew.cmu.edu/usr1/paxia/private/418/m-pathery/mcts/mcts/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/paxia/AFS/private/418/m-pathery/mcts/mcts/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building CXX object CMakeFiles/cmTryCompileExec3543783401.dir/src.cxx.o
+/usr/bin/c++    -DSUPPORTS_STD_CXX11   --std=c++11 -o CMakeFiles/cmTryCompileExec3543783401.dir/src.cxx.o -c /home/paxia/AFS/private/418/m-pathery/mcts/mcts/CMakeFiles/CMakeTmp/src.cxx
+cc1plus: error: unrecognized command line option "-std=c++11"
+gmake[1]: *** [CMakeFiles/cmTryCompileExec3543783401.dir/src.cxx.o] Error 1
+gmake[1]: Leaving directory `/afs/andrew.cmu.edu/usr1/paxia/private/418/m-pathery/mcts/mcts/CMakeFiles/CMakeTmp'
+gmake: *** [cmTryCompileExec3543783401/fast] Error 2
+
+Source file was:
+int main() { return 0;}

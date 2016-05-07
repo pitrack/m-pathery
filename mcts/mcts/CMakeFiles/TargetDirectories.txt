@@ -1,5 +1,0 @@
-/home/pi/Documents/m-pathery/mcts/monte-carlo-tree-search-master/games/CMakeFiles/connect_four.dir
-/home/pi/Documents/m-pathery/mcts/monte-carlo-tree-search-master/games/CMakeFiles/kalaha.dir
-/home/pi/Documents/m-pathery/mcts/monte-carlo-tree-search-master/games/CMakeFiles/nim.dir
-/home/pi/Documents/m-pathery/mcts/monte-carlo-tree-search-master/tests/CMakeFiles/test_go.dir
-/home/pi/Documents/m-pathery/mcts/monte-carlo-tree-search-master/tests/CMakeFiles/test_mcts.dir

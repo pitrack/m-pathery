@@ -1,0 +1,3 @@
+/home/paxia/AFS/private/418/m-pathery/mcts/mcts/games/CMakeFiles/connect_four.dir
+/home/paxia/AFS/private/418/m-pathery/mcts/mcts/games/CMakeFiles/kalaha.dir
+/home/paxia/AFS/private/418/m-pathery/mcts/mcts/games/CMakeFiles/nim.dir

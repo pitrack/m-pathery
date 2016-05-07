@@ -1,1 +1,0 @@
-/usr/bin/c++    --std=c++11 -fopenmp -Wall -Wextra -Wno-sign-compare -Wno-unused-parameter -fpic -O3 -DNDEBUG    CMakeFiles/test_mcts.dir/test_mcts.cpp.o  -o ../bin/test_mcts -rdynamic 
