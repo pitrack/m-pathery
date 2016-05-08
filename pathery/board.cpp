@@ -1,7 +1,12 @@
 #include "board.h"
 #include "tile.h"
 
+#include <algorithm>
 #include <iostream>
+#include <queue>
+#include <vector>
+#include <map>
+
 
 //using namespace tile;
 
@@ -46,7 +51,7 @@ Board Board::copy() const {
 int Board::getHeight() const { return height; }
 int Board::getWidth() const { return width; }
 
-
+//If the path can walk over this tile, then it should be returned
 std::vector<std::pair<int, int>> Board::getNeighbors(int x, int y) const {
   std::vector<std::pair<int, int>> neighbors;
   for (int i = x-1; i <= x+1; i++){
@@ -55,13 +60,14 @@ std::vector<std::pair<int, int>> Board::getNeighbors(int x, int y) const {
 	  j >= 0 && j < height &&
 	  ((i == x) != (j == y)))
 	{ 
-	  if (grid[i][j].getTileType() != TileType::FixedWall && 
-	      grid[i][j].getTileType() != TileType::FreeWall) {
-	    neighbors.push_back(std::make_pair(i, j));
-	  }
-	}
-    }
-  }
+           TileType gridTile = grid[i][j].getTileType();
+            if (gridTile != TileType::FixedWall && 
+                gridTile != TileType::FreeWall) {
+	        neighbors.push_back(std::make_pair(i, j));
+            }
+	} 
+    } 
+  } 
   return neighbors;
 } 
 
@@ -99,6 +105,18 @@ void Board::putTileAt(int x, int y, TileType t){
 void Board::putWallAt(int x, int y){
   if (x >= 0 && y >= 0){
     this->putTileAt(x, y, FreeWall);
+    // auto neighbors = getNeighbors(x,y);
+    // for(auto ngh : neighbors) {
+    //     if (isEmpty(ngh.first, ngh.second)) {
+    //         putTileAt(ngh.first, ngh.second, FreeWall);
+    //         if(run() == 0){
+    //             putTileAt(ngh.first, ngh.second, Blocks);
+    //         }
+    //         else{
+    //             undo(ngh.first, ngh.second);
+    //         }
+    //     }
+    // }
   }
 }
 
@@ -110,7 +128,51 @@ void Board::undo(int x, int y) {
 
 
 // runs kbfs
-int Board::run(){
+int Board::run() const {
+  typedef std::pair<int, int> Move;
+  int min = 0; //Realistically won't be greater than 1000
+  
+  std::vector<Move> sources;
+  //Initialize source and targets
+  for (int i = 0; i < width; i++){
+    for(int j = 0; j < height; j++){
+      if (grid[i][j].getTileType() == TileType::Start) {
+	sources.push_back(std::make_pair(i, j));
+      }
+    }
+  }
+  
+  //Do the search
+  std::map<Move, int> visited;
+  for (auto source : sources)
+    {
+      int score;
+      bool done = false;
+      std::queue<std::pair<Move, int>> bfs_queue;
+      bfs_queue.push(make_pair(source, 0));
+      visited[source] = 0;
+      while(!bfs_queue.empty() && !done) {
+	std::pair<Move, int> current = bfs_queue.front();
+	bfs_queue.pop();
+	Move curr_loc = current.first;
+	std::vector<Move> neighbors = getNeighbors(curr_loc.first, curr_loc.second);
+	for (Move ngh : neighbors) {
+	  if(visited.find(ngh) == visited.end() || visited[ngh] > current.second + 1) {
+	    bfs_queue.push(make_pair(ngh, current.second + 1));
+	    visited[ngh] = current.second + 1;
+	    if(grid[ngh.first][ngh.second].getTileType() == TileType::End){
+	      score = current.second + 1;
+	      if (min == 0 || score < min) {
+		min = score;
+		done = true;
+		break;
+	      }
+	    }
+	  }
+	}      
+      }
+      }
+  return min;
 }
 
 

@@ -1,6 +1,6 @@
 #pragma once
 
-enum TileType { Uninit, Empty, Start, End, FixedWall, FreeWall, Target };
+enum TileType { Uninit, Empty, Start, End, FixedWall, FreeWall, Target, Blocks};
 
 class Tile {
  public:

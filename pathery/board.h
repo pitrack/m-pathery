@@ -22,7 +22,7 @@ class Board {
   void putWallAt(int x, int y);
   void undo(int x, int y);
 
-  int run();
+  int run() const;
 
   void print() const;
   // other functions like clear board, remove, or copy might be desired.

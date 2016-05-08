@@ -1,8 +1,8 @@
 #ifndef MCTS_HEADER_PETTER
 #define MCTS_HEADER_PETTER
 #define TREE true
-#define ROOTS 4
-#define PTRS 4
+#define ROOTS 1
+#define PTRS 1
 
 //
 // Petter Strandmark 2013
@@ -236,9 +236,9 @@ Node<State>* Node<State>::select_child_UCT() const
 {
 	attest( ! children.empty() );
 	for (auto child: children) {
-		child->UCT_score = double(child->wins) / double(child->visits) +
-			std::sqrt(2.0 * std::log(double(this->visits)) / child->visits);
-	}
+         child->UCT_score = double(child->wins) / double(child->visits)
+           + 2 * std::sqrt( std::log(double(this->visits)) / child->visits);
+        }
 
 	return *std::max_element(children.begin(), children.end(),
 		[](Node* a, Node* b) { return a->UCT_score < b->UCT_score; });
@@ -354,7 +354,7 @@ template<typename State>
 		
 		// We now play randomly until the game ends.
 		while (state.has_moves()) {
-                     state.do_random_move(&random_engine);
+		  state.do_random_move(&random_engine);
 		}
 
 
@@ -366,6 +366,9 @@ template<typename State>
                 }
 		while (node != nullptr) {
                         int result = state.get_result();
+			if (result <= 0){
+			  result = 0;
+			}
 			node->update(result);
 			
 			if (node->parent == nullptr) {
@@ -381,9 +384,9 @@ template<typename State>
 			    node->back.unlock();
                         }
 			node = node->parent;
-		}
+                }
 
-		//		std::cerr << node->tree_to_string() << endl;
+		//std::cerr << node->tree_to_string() << endl;
 		
 		#ifdef USE_OPENMP
 		if (options.verbose || options.max_time >= 0) {
@@ -464,7 +467,7 @@ typename State::Move compute_move(const State root_state,
 	for (int t = 0; t < options.number_of_roots; ++t) {
 		auto func = [t, &root_state, &job_options] () -> std::shared_ptr<Node<State>>
 		{
-                     return compute_tree(root_state.copy(), job_options, 1012411 * t + 12515);
+                     return compute_tree(root_state.copy(), job_options, 12312 * t + 23);
 		};
 
 		root_futures.push_back(std::async(std::launch::async, func));
@@ -506,7 +509,7 @@ typename State::Move compute_move(const State root_state,
 
 		if (options.verbose) {
 			cerr << "Move: " << "(" << itr.first.first << "," << itr.first.second << ")"
-			     << " (" << setw(2) << right << int(100.0 * v / double(games_played) + 0.5) << "% visits)"
+			     << " (" << setw(2) << right << v << " visits)"
 			     << " (" << setw(2) << right << int(100 * w/v) / 100.0    << " points)" << endl;
 		}
 	}

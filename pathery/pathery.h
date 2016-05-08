@@ -1,6 +1,6 @@
 #include <algorithm>
 #include <vector>
-#include <queue>
+#include <chrono>
 
 #include <iostream>
 #include <random>
@@ -9,6 +9,8 @@ using namespace std;
 #include "../mcts/mcts.h"
 #include "board.h"
 #include "tile.h"
+
+typedef std::chrono::high_resolution_clock Clock;
 
 class PatheryState
 {
@@ -20,7 +22,9 @@ class PatheryState
    : player_to_move(1), //only one player
     board(board_),
     num_tiles(num_tiles_)
-    {}
+    {
+      current_score = board.run();
+    }
 
   PatheryState copy() const{
     Board board_copy = board.copy();
@@ -54,6 +58,9 @@ class PatheryState
       /* std::cout << "For board:" << std::endl; */
       /* board.print(); */
       std::vector<Move> moves;
+      if (num_tiles == 0) {
+	return moves;
+      }
       for (int y = 0; y < board.getHeight(); y++) {
 	for (int x = 0; x < board.getWidth(); x++) {
 	  //cout << "Checking" << x << "|" << y << endl;;
@@ -62,6 +69,7 @@ class PatheryState
 	  if (board.isEmpty(x, y) && board.hasNeighbors(x, y)) {
 	    /* cout << "Pushing back" << x << "|" << y << endl; */
 	    //cout << "Added" << endl;
+	    // Can't put things here
 	    moves.push_back(make_pair(x, y));
 	  }
 	}      
@@ -78,55 +86,7 @@ class PatheryState
   // This might be parallelizable too, but might not be worth it
   double get_result() const
   {    
-    //get the score here. Result might depend on existing max score
-    int min = 0; //Realistically won't be greater than 1000
-
-
-    std::vector<std::pair<int, int>> sources;
-
-    //Initialize source and targets
-    for (int i = 0; i < board.getWidth(); i++){
-      for(int j = 0; j < board.getHeight(); j++){
-	if (board.getTileAt(i,j).getTileType() == TileType::Start) {
-	  sources.push_back(std::make_pair(i, j));
-	}
-      }
-    }
-    
-    for (auto source : sources) {
-      int score;
-      bool done = false;
-      std::set<Move> visited;
-      std::queue<std::pair<Move, int>> bfs_queue;
-      bfs_queue.push(make_pair(source, 0));
-      visited.insert(source);
-      while(!bfs_queue.empty() && !done) {
-	std::pair<Move, int> current = bfs_queue.front();
-	bfs_queue.pop();
-	Move curr_loc = current.first;
-	std::vector<Move> neighbors = board.getNeighbors(curr_loc.first, curr_loc.second);
-	for (Move ngh : neighbors) {
-	  if(board.getTileAt(ngh.first, ngh.second).getTileType() == TileType::End){
-	    score = current.second + 1;
-	    if (min == 0 || score < min) {
-	      min = score;
-	      done = true;
-	      break;
-	    }
-	  }
-	  if(visited.find(ngh) == visited.end()) {
-	    bfs_queue.push(make_pair(ngh, current.second+1));
-	    visited.insert(ngh);
-	  }
-	}      
-      }
-    }
-    
-
-    return min;
-    /* if (board.getTileAt(8,3).getTileType() != TileType::Empty) return 1; */
-    /* return 0; */
-
+    return double(board.run() - current_score);
   }
 
   void print() const
@@ -135,6 +95,7 @@ class PatheryState
   }
 
   int player_to_move;
+  int current_score;
  private:  
   Board board;
   int num_tiles;
