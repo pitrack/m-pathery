@@ -1,4 +1,7 @@
 #include <algorithm>
+#include <vector>
+#include <queue>
+
 #include <iostream>
 #include <random>
 using namespace std;
@@ -33,17 +36,11 @@ class PatheryState
   template<typename RandomEngine>
     void do_random_move(RandomEngine* engine)
     {     
-      std::uniform_int_distribution<int> xs(0, board.getWidth() - 1);
-      std::uniform_int_distribution<int> ys(0, board.getHeight() - 1);
+      std::vector<Move> moves = get_moves();
+      std::uniform_int_distribution<int> move_rng(0, moves.size() - 1);
       
-      while (true) {
-	auto x = xs(*engine);
-	auto y = ys(*engine);
-	if (board.isEmpty(x,y)){
-	  do_move(make_pair(x, y));
-	  return;
-	}
-      }
+      int m = move_rng(*engine);
+      do_move(moves[m]);
       
     }
   
@@ -56,7 +53,6 @@ class PatheryState
     {
       /* std::cout << "For board:" << std::endl; */
       /* board.print(); */
-      
       std::vector<Move> moves;
       for (int y = 0; y < board.getHeight(); y++) {
 	for (int x = 0; x < board.getWidth(); x++) {
@@ -79,36 +75,57 @@ class PatheryState
     }
 
   //  don't need to get winner, just find the score
-  double get_result(int current_player_to_move) const
-  {
+  // This might be parallelizable too, but might not be worth it
+  double get_result() const
+  {    
     //get the score here. Result might depend on existing max score
-    int score = 0;
+    int min = 0; //Realistically won't be greater than 1000
 
 
+    std::vector<std::pair<int, int>> sources;
 
-    for(int i = 0; i < board.getWidth(); i++){
-      if (board.isEmpty(i, 0)) {
-	score++;
+    //Initialize source and targets
+    for (int i = 0; i < board.getWidth(); i++){
+      for(int j = 0; j < board.getHeight(); j++){
+	if (board.getTileAt(i,j).getTileType() == TileType::Start) {
+	  sources.push_back(std::make_pair(i, j));
+	}
       }
-      
-      if (board.getTileAt(3,0).getTileType() != TileType::Empty)
-      	return 1;
-      else
-      	return 0;
     }
+    
+    for (auto source : sources) {
+      int score;
+      bool done = false;
+      std::set<Move> visited;
+      std::queue<std::pair<Move, int>> bfs_queue;
+      bfs_queue.push(make_pair(source, 0));
+      visited.insert(source);
+      while(!bfs_queue.empty() && !done) {
+	std::pair<Move, int> current = bfs_queue.front();
+	bfs_queue.pop();
+	Move curr_loc = current.first;
+	std::vector<Move> neighbors = board.getNeighbors(curr_loc.first, curr_loc.second);
+	for (Move ngh : neighbors) {
+	  if(board.getTileAt(ngh.first, ngh.second).getTileType() == TileType::End){
+	    score = current.second + 1;
+	    if (min == 0 || score < min) {
+	      min = score;
+	      done = true;
+	      break;
+	    }
+	  }
+	  if(visited.find(ngh) == visited.end()) {
+	    bfs_queue.push(make_pair(ngh, current.second+1));
+	    visited.insert(ngh);
+	  }
+	}      
+      }
+    }
+    
 
-
-
-
-
-
-
-
-
-
-
-
-
+    return min;
+    /* if (board.getTileAt(8,3).getTileType() != TileType::Empty) return 1; */
+    /* return 0; */
 
   }
 

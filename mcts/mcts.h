@@ -1,8 +1,8 @@
 #ifndef MCTS_HEADER_PETTER
 #define MCTS_HEADER_PETTER
 #define TREE true
-#define ROOTS 1
-#define PTRS 1
+#define ROOTS 4
+#define PTRS 4
 
 //
 // Petter Strandmark 2013
@@ -365,7 +365,9 @@ template<typename State>
 		    node->back.lock(); 
                 }
 		while (node != nullptr) {
-			node->update(state.get_result(node->player_to_move));
+                        int result = state.get_result();
+			node->update(result);
+			
 			if (node->parent == nullptr) {
                             if (TREE) {
                                 node->back.unlock();
@@ -505,7 +507,7 @@ typename State::Move compute_move(const State root_state,
 		if (options.verbose) {
 			cerr << "Move: " << "(" << itr.first.first << "," << itr.first.second << ")"
 			     << " (" << setw(2) << right << int(100.0 * v / double(games_played) + 0.5) << "% visits)"
-			     << " (" << setw(2) << right << int(100.0 * w / v + 0.5)    << "% wins)" << endl;
+			     << " (" << setw(2) << right << int(100 * w/v) / 100.0    << " points)" << endl;
 		}
 	}
 
@@ -515,7 +517,7 @@ typename State::Move compute_move(const State root_state,
 		cerr << "----" << endl;
 		cerr << "Best: " << " (" << best_move.first << "," << best_move.second << ") "
 		     << " (" << 100.0 * best_visits / double(games_played) << "% visits)"
-		     << " (" << 100.0 * best_wins / best_visits << "% wins)" << endl;
+		     << " (" << 1.0 * best_wins / best_visits << " points)" << endl;
 	}
 
 	#ifdef USE_OPENMP

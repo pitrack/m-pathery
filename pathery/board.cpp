@@ -15,7 +15,7 @@ Board::Board(int width, int height) : width(width), height(height) {
   }
 }
 
-Board::Board(const int width, const int height, const TileType base_grid[2][8]) : width(width), height(height) {
+Board::Board(const int width, const int height, const TileType base_grid[7][13]) : width(width), height(height) {
   std::cout << "Using preloaded map" << std::endl;
   grid = new Tile*[width];
   for (int w = 0; w < width; w++) {
@@ -47,12 +47,29 @@ int Board::getHeight() const { return height; }
 int Board::getWidth() const { return width; }
 
 
+std::vector<std::pair<int, int>> Board::getNeighbors(int x, int y) const {
+  std::vector<std::pair<int, int>> neighbors;
+  for (int i = x-1; i <= x+1; i++){
+    for (int j = y-1; j <= y+1; j++){
+      if (i >= 0 && i < width &&
+	  j >= 0 && j < height &&
+	  ((i == x) != (j == y)))
+	{ 
+	  if (grid[i][j].getTileType() != TileType::FixedWall && 
+	      grid[i][j].getTileType() != TileType::FreeWall) {
+	    neighbors.push_back(std::make_pair(i, j));
+	  }
+	}
+    }
+  }
+  return neighbors;
+} 
+
 bool Board::isEmpty (int x, int y) const {
   return grid[x][y].getTileType() == TileType::Empty;
 }
 
 bool Board::hasNeighbors(int x, int y) const {
-  
   for (int i = x-1; i <= x+1; i++){
     for (int j = y-1; j <= y+1; j++){
       if (i >= 0 && i < width &&
@@ -82,6 +99,12 @@ void Board::putTileAt(int x, int y, TileType t){
 void Board::putWallAt(int x, int y){
   if (x >= 0 && y >= 0){
     this->putTileAt(x, y, FreeWall);
+  }
+}
+
+void Board::undo(int x, int y) {
+  if (x >= 0 && y >= 0){
+    this->putTileAt(x, y, Empty);
   }
 }
 
