@@ -1,9 +1,8 @@
 #ifndef MCTS_HEADER_PETTER
 #define MCTS_HEADER_PETTER
 #define TREE true
-#define ROOTS 1
-#define PTRS 1
-
+#define ROOTS 4
+#define PTRS 4
 //
 // Petter Strandmark 2013
 // petter.strandmark@gmail.com
@@ -130,8 +129,11 @@ public:
 	~Node();
 
 	bool has_untried_moves() const;
+	//bool has_untried_neighbors() const;
 	template<typename RandomEngine>
 	Move get_untried_move(RandomEngine* engine) const;
+	/* template<typename RandomEngine> */
+	/* Move get_untried_neighbors(RandomEngine* engine) const; */
 	Node* best_child() const;
 
 	bool has_children() const
@@ -139,7 +141,7 @@ public:
 		return ! children.empty();
 	}
 
-	Node* select_child_UCT() const;
+	Node* select_child_UCT();
 	Node* add_child(const Move& move, const State& state);
 	void update(double result);
 
@@ -157,8 +159,10 @@ public:
 	std::mutex m;
 	std::mutex back;
 
-	std::vector<Move> moves;
+	std::pair<std::vector<Move>, std::vector<Move>> moves;
+	std::vector<Move> neighbors;
 	std::vector<Node*> children;
+	
 
 private:
 	Node(const State& state, const Move& move, Node* parent);
@@ -209,22 +213,44 @@ Node<State>::~Node()
 template<typename State>
 bool Node<State>::has_untried_moves() const
 {
-	return ! moves.empty();
+  return ! (moves.first.empty() && moves.second.empty());
 }
+
+/* template<typename State> */
+/* bool Node<State>::has_untried_neighbors() const */
+/* { */
+/* 	return ! neighbors.empty(); */
+/* } */
+
 
 template<typename State>
 template<typename RandomEngine>
 typename State::Move Node<State>::get_untried_move(RandomEngine* engine) const
 {
-	attest( ! moves.empty());
-	std::uniform_int_distribution<std::size_t> moves_distribution(0, moves.size() - 1);
-	return moves[moves_distribution(*engine)];
+        attest(! (moves.first.empty() && moves.second.empty()));
+	if (! moves.first.empty()) {
+	  std::uniform_int_distribution<std::size_t> moves_distribution(0, moves.first.size() - 1);
+	  return moves.first[moves_distribution(*engine)];
+	}
+	else {
+	  std::uniform_int_distribution<std::size_t> moves_distribution(0, moves.second.size() - 1);
+	  return moves.second[moves_distribution(*engine)];
+	}
 }
+
+/* template<typename State> */
+/* template<typename RandomEngine> */
+/* typename State::Move Node<State>::get_untried_neighbors(RandomEngine* engine) const */
+/* { */
+/* 	attest( ! moves.empty()); */
+/* 	std::uniform_int_distribution<std::size_t> moves_distribution(0, neighbors.size() - 1); */
+/* 	return neighbors[moves_distribution(*engine)]; */
+/* } */
 
 template<typename State>
 Node<State>* Node<State>::best_child() const
 {
-	attest(moves.empty());
+        attest(moves.first.empty() && moves.second.empty());
 	attest( ! children.empty() );
 
 	return *std::max_element(children.begin(), children.end(),
@@ -232,14 +258,14 @@ Node<State>* Node<State>::best_child() const
 }
 
 template<typename State>
-Node<State>* Node<State>::select_child_UCT() const
+Node<State>* Node<State>::select_child_UCT()
 {
 	attest( ! children.empty() );
 	for (auto child: children) {
          child->UCT_score = double(child->wins) / double(child->visits)
            + 2 * std::sqrt( std::log(double(this->visits)) / child->visits);
         }
-
+	
 	return *std::max_element(children.begin(), children.end(),
 		[](Node* a, Node* b) { return a->UCT_score < b->UCT_score; });
 }
@@ -251,10 +277,19 @@ Node<State>* Node<State>::add_child(const Move& move, const State& state)
 	children.push_back(node);
 	attest( ! children.empty());
 
-	auto itr = moves.begin();
-	for (; itr != moves.end() && *itr != move; ++itr);
-	attest(itr != moves.end());
-	moves.erase(itr);
+	if (! moves.first.empty() ) {
+	  auto itr = moves.first.begin();
+	  for (; itr != moves.first.end() && *itr != move; ++itr);
+	  attest(itr != moves.first.end());
+	  moves.first.erase(itr);
+	}
+	else {
+	  auto itr = moves.second.begin();
+	  for (; itr != moves.second.end() && *itr != move; ++itr);
+	  attest(itr != moves.second.end());
+	  moves.second.erase(itr);
+	}
+
 	return node;
 }
 
@@ -262,7 +297,6 @@ template<typename State>
 void Node<State>::update(double result)
 {
 	visits++;
-
 	wins += result;
 	//double my_wins = wins.load();
 	//while ( ! wins.compare_exchange_strong(my_wins, my_wins + result));
@@ -276,7 +310,7 @@ std::string Node<State>::to_string() const
 	     << "P" << 3 - player_to_move << " "
 	     << "M:" << "(" << move.first << "," << move.second << ")" << " "
 	     << "W/V: " << wins << "/" << visits << " "
-	     << "U: " << moves.size() << "]\n";
+	     << "U: " << moves.first.size() + moves.second.size() << "]\n";
 	return sout.str();
 }
 
@@ -340,14 +374,19 @@ template<typename State>
                 }
 
 		auto old_node = node;		
-
 		// If we are not already at the final state, expand the
 		// tree with a new node and move there.
+		/* if (node->has_untried_neighbors()) { */
+                /*     auto move = node->get_untried_neighbors(&random_engine); */
+                /*     state.do_move(move); */
+		/*     node = node->add_child(move, state); */
+                /* } */
 		if (node->has_untried_moves()) {
-                    auto move = node->get_untried_move(&random_engine);
-                    state.do_move(move);
-		    node = node->add_child(move, state);
+		  auto move = node->get_untried_move(&random_engine);
+		  state.do_move(move);
+		  node = node->add_child(move, state);
                 }
+
 		if (TREE) {
                     old_node->m.unlock();
                 }
@@ -427,9 +466,10 @@ std::shared_ptr<Node<State>>  compute_tree(const State root_state,
 	job_options.verbose = false;
 
 	for (int t = 0; t < options.number_of_pointers; ++t) {
-                auto func = [t, &root, &state, &job_options] () -> void
+	  auto func = [t, initial_seed, &root, &state, &job_options] () -> void
 		{
-                        return compute_pointer(root, state, job_options, 2342123 * t + 15251); 
+                        return compute_pointer(root, state, job_options, 
+					       2342123 * t + 731 * initial_seed + 15251); 
 			//seed is arbitrary
 		};
 		root_futures.push_back(std::async(std::launch::async, func));
@@ -451,9 +491,12 @@ typename State::Move compute_move(const State root_state,
 	attest(root_state.player_to_move == 1 || root_state.player_to_move == 2);
 
 	auto moves = root_state.get_moves();
-	attest(moves.size() > 0);
-	if (moves.size() == 1) {
-		return moves[0];
+	attest(moves.first.size() + moves.second.size() > 0);
+	if (moves.first.size() == 1) {
+	  return moves.first[0];
+	}
+	else if (moves.first.size() == 0 && moves.second.size() == 1) {
+	  return moves.second[0];
 	}
 
 	#ifdef USE_OPENMP

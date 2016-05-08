@@ -41,13 +41,23 @@ TileType TEST_GRID3[7][13] =
   };
 
 
+TileType TEST_GRID5[7][13] = 
+  {{Start, Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty, FixedWall, End},
+   {Start, FixedWall, Empty, Empty, FixedWall, Empty, Empty, Empty, Empty, Empty, Empty, Empty, End},
+   {Start, Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty, End},
+   {Start, Empty, FixedWall, Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty, End},
+   {Start, FixedWall, Empty, Empty, Empty, Empty, Empty, FixedWall, Empty, Empty, FixedWall, Empty, End},
+   {Start, Empty, Empty, Empty, Empty, Empty, Empty, Empty, FixedWall, Empty, Empty, Empty, End},
+   {Start, Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty, End}
+  };
+
 
 void main_program()
 {
-  Board board(13, 7, TEST_GRID4);
+  Board board(13, 7, TEST_GRID5);
   
   MCTS::ComputeOptions player_options;
-  player_options.max_iterations = 10000;
+  player_options.max_iterations = 1000;
   player_options.verbose = true;
   
   
