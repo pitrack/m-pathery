@@ -14,7 +14,7 @@ void main_program()
   Board board(8, 2, TEST_GRID);
   
   MCTS::ComputeOptions player_options;
-  player_options.max_iterations = 1000;
+  player_options.max_iterations = 100;
   player_options.verbose = true;
   
   
@@ -23,8 +23,8 @@ void main_program()
     PatheryState::Move move = MCTS::compute_move(state, player_options);
     state.do_move(move);
     std::cout << move.first << "|" << move.second << endl;
+    state.print();
   }
-  state.print();
 }
 
 

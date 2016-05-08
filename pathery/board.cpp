@@ -52,13 +52,17 @@ bool Board::isEmpty (int x, int y) const {
 }
 
 bool Board::hasNeighbors(int x, int y) const {
+  
   for (int i = x-1; i <= x+1; i++){
     for (int j = y-1; j <= y+1; j++){
       if (i >= 0 && i < width &&
 	  j >= 0 && j < height &&
-	  i != x && j != y)
-	if (grid[i][j].getTileType() != TileType::Empty) {
-	  return true;
+	  !(i == x && j == y))
+	{ 
+	  //std::cout << i << j << "has type" << grid[i][j].getTileType() << std::endl;
+	  if (grid[i][j].getTileType() != TileType::Empty) {
+	    return true;
+	  }
 	}
     }
   }
